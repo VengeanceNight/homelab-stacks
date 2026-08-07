@@ -65,10 +65,45 @@ cd /opt/arrr-stack && docker compose up -d
 ### First-run setup (manual — not scriptable)
 
 1. SABnzbd: run the setup wizard, add Usenet provider.
-2. NZBHydra2: add indexers, connect SABnzbd as the downloader.
-3. Radarr/Sonarr: add NZBHydra2 as a Newznab indexer, add SABnzbd as the
-   download client, set root folders as above.
-4. Plex: claim the server, add libraries.
+2. NZBHydra2: add indexers (e.g. an existing Usenet indexer subscription).
+3. Plex: claim the server, add libraries pointed at `/data/movies`,
+   `/data/tv`, `/data/music`.
+
+Each of these needs your own credentials/subscription details, so it's
+manual by nature — everything *after* this step (wiring the apps
+together) is scripted, see below.
+
+### Wiring the apps together
+
+```bash
+pip install requests   # if not already available
+python3 arrr-stack/wire_stack.py --host 192.168.1.8
+```
+
+Requires SSH access to the guest (reads each app's own generated API key
+from its config — Radarr/Sonarr's `config.xml`, SABnzbd's `sabnzbd.ini`,
+NZBHydra2's own `/internalapi/config`, Plex's `Preferences.xml`; no keys
+are ever hardcoded or committed). Safe to re-run — existing entries just
+error with "Should be unique," which is expected. Sets up:
+
+- Radarr/Sonarr → SABnzbd as the download client, NZBHydra2 as the
+  indexer, root folders (`/data/Plex/Movies` / `/data/Plex/TV`)
+- Radarr/Sonarr → Plex "connect" notification, so a completed import
+  triggers an immediate library refresh instead of waiting on Plex's own
+  scan interval — needed because Plex's real-time file watching doesn't
+  reliably fire over NFS mounts
+- NZBHydra2 → SABnzbd as its own downloader, so manually searching and
+  grabbing a result inside Hydra's UI (outside of Radarr/Sonarr) sends
+  straight to SABnzbd
+
+**Real gotcha hit doing this the first time:** SABnzbd has a
+`host_whitelist` security setting that rejects requests by unrecognized
+`Host` header — the container-name hostname (`sabnzbd`) that
+Radarr/Sonarr/Hydra use internally isn't whitelisted by default, so
+every connection attempt 403s until it's added. The script handles this
+automatically now (`ensure_sabnzbd_whitelist`), but worth knowing if you
+ever add another service that needs to talk to SABnzbd by container
+name and see the same 403.
 
 ### Not part of this stack
 

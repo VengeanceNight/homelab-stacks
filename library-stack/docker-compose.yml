@@ -1,0 +1,31 @@
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    user: "1000:1000"
+    volumes:
+      - /opt/audiobookshelf/config:/config
+      - /opt/audiobookshelf/metadata:/metadata
+      - /mnt/eagle1/Audiobooks:/audiobooks
+    ports:
+      - 13378:80
+    restart: unless-stopped
+
+  calibre-web-automated:
+    image: crocodilestick/calibre-web-automated:latest
+    container_name: calibre-web-automated
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      # Library and ingest dirs both live on the NFS-backed eagle1 share --
+      # disables WAL/chown (NFS locking risk) and switches file watching to
+      # polling instead of inotify (unreliable over NFS).
+      - NETWORK_SHARE_MODE=true
+    volumes:
+      - /opt/calibre-web-automated/config:/config
+      - /mnt/eagle1/torrent/ebooks:/cwa-book-ingest
+      - /mnt/eagle1/Ebooks/library:/calibre-library
+    ports:
+      - 8083:8083
+    restart: unless-stopped

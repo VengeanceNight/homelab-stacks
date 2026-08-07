@@ -13,6 +13,6 @@ services:
       - /mnt/eagle1:/data
     ports:
       - 8080:8080
-      - 6881:6881
-      - 6881:6881/udp
+      - 51413:51413
+      - 51413:51413/udp
     restart: unless-stopped

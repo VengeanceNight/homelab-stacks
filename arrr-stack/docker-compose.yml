@@ -70,4 +70,5 @@ services:
       - /mnt/eagle1/Plex/TV:/data/tv
       - /mnt/eagle1/Plex/Music:/data/music
       - /mnt/eagle1/Plex/Anime-Trial:/data/anime-trial
+      - /mnt/eagle1/Plex/Anime:/data/anime
     restart: unless-stopped
